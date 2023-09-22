@@ -39,8 +39,8 @@ nLob=[0.33 0.5 0.66];    % [min interm. max] Lobate
                     %%% Material 1 - Lobate
 nL = nLob(n_Sc);        
 p_soilL = 1300;       % DENSITY               
-cp_soilL = 850;       % HEAT CAPACITY; GRAB FROM JULIE'S DATABASE    
-k_soilL = 0.5*toyr;   % THERMAL CONDUCTIVITY; GRAB FROM JULIE'S DATABASE (WHY MULTIPLY BY SECONDS IN A YR?)       
+cp_soilL = 1538.46;       % HEAT CAPACITY; GRAB FROM JULIE'S DATABASE    
+k_soilL = 1.27*toyr;   % THERMAL CONDUCTIVITY; GRAB FROM JULIE'S DATABASE (WHY MULTIPLY BY SECONDS IN A YR?)       
 aQ=k_soilL/(p_soilL*cp_soilL); %THERMAL DIFFUSIVITY [m^2/s]
 
 
@@ -57,12 +57,12 @@ Kv=273.15;               % set to 273.15 if in Kelvin. 0 if in C
 T_gradient=0.00273;    % Thermal gradient [K/m] (Raymond et al. 2020)
 T_0=0+Kv;           % Initial surface temperature - NOT USED if temperature reconstruction is defined
 T_end=grid_depth*T_gradient+Kv; % Initial temperature at bottom of grid - NOT USED in for loop
-T_ini=z*T_gradient+Kv; % Initial temperature distribution, gives every cell node a temperature
+T_ini=Kv; % Initial temperature distribution, gives every cell node a temperature
 T=zeros(1,nocell);  % array of temperatures for every node 
 
                     % Holocene temperature reconstruction (11 to 0 ka) based on Mangerud and
                     % Svendsen (2017). See  Sect. 3.2 in Hornum et al. (2020)
-TCurve_data=load('/Users/alexiakubas/Desktop/Ceres/1dHT_model/mikkeltoft--1DHT-model-code-20153b8/HoloceneTemperatureCurve.txt'); % 'HoloceneTemperatureCurve.txt' should be placed in same folder as this script
+TCurve_data=load('/Users/alexiakubas/Desktop/Ceres/1DHT_clone/-1DHT-model-code/cerestempcurve_rampeddown.csv'); % 'HoloceneTemperatureCurve.txt' should be placed in same folder as this script
 T_sum=TCurve_data(:,2); % MSAT [degree C or K] at these
 tt_yr=TCurve_data(:,1); % times [yr]
 T_ann10=T_sum-10;       % MAAT
@@ -151,10 +151,10 @@ F_matx_10=zeros(nocell,10000);
 w=0.957725;     % Correction factor, DESCRIBED IN SECTION 4.1 IN PAPER, T_S = -2 ºC, T_L = 0 ºC
 %%      %%% Numerical model %%%
 tic
-col_incl=(9);       %%% Specifiy which of the 12 columns (zones) to include in the ground temperature simulation (e.g. [1:12] (all), [4] (only one), [1 5 11] (several specific ones).
+col_incl=(1);       %%% Specifiy which of the 12 columns (zones) to include in the ground temperature simulation (e.g. [1:12] (all), [4] (only one), [1 5 11] (several specific ones).
 for col=col_incl
   if col==1             %%% Defining the column in use
-      runtime=500;      % Simulation runtime [years]
+      runtime=10000;      % Simulation runtime [years]
       materialid=Z0_1MatID;
   elseif col==2
       runtime=1500;
@@ -230,9 +230,9 @@ stability=(max(a_s_ice)*tstep/dz^2);
             k=k+1;
                 for i=2:(nocell-1) % 2 TO 500 (excluding top and bottom bc they have prescribed fractions)
                               %%% Fraction of w and ice within pore space %%%
-                        if xT_ini(i)<-2 % SOLIDUS
+                        if xT_ini(i)<271.15 % SOLIDUS
                             F_w(i)=0;
-                        elseif xT_ini(i)>0 % LIQUIDUS
+                        elseif xT_ini(i)>273.15 % LIQUIDUS
                             F_w(i)=1;
                         else
                             F_w(i)=exp(-(xT_ini(i)/w)^2);   % %% eq. A, Freezing curve
@@ -240,9 +240,9 @@ stability=(max(a_s_ice)*tstep/dz^2);
                             F_ice(i)=1-F_w(i);
 
                               %%% dF_w/dT %%%
-                        if xT_ini(i)<-2
+                        if xT_ini(i)<271.15
                             dF_w(i)=0; % ALL ICE 
-                        elseif xT_ini(i)>0
+                        elseif xT_ini(i)>273.15
                             dF_w(i)=0; % ALL LIQUID
                         else
                             dF_w(i)=-2*xT_ini(i)*exp(-(xT_ini(i)/w)^2); %%% diff of eq. A
